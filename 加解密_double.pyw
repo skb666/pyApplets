@@ -1,3 +1,4 @@
+#单电脑双用户
 from tkinter import *
 import base64,os,random,pickle,hashlib
 import tkinter.messagebox as msgbox
