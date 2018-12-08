@@ -2,6 +2,9 @@ from tkinter import *
 import base64,os,random,pickle,hashlib
 import tkinter.messagebox as msgbox
 
+__author__="KaiboShen"
+__date__="2018-12-8"
+
 def cut(target):
     target.event_generate("<<Cut>>")
 
@@ -114,6 +117,7 @@ def Unlock(*event):
         pre=Pretreatment()
         if pre[0]:
             try:
+                #下方的try作弊了一下下，用于验证A、B方密钥是否修改
                 try:
                     if pre[2]["User"]=='A':
                         publickey=hashlib.md5(pre[2]["PublicKey"].encode()).hexdigest()
@@ -292,7 +296,7 @@ if __name__ == '__main__':
     catalog.add_radiobutton(label = "UserA",variable = v_mode,value = 0,command=lambda *event:changeUser(v_mode))
     catalog.add_radiobutton(label = "UserB",variable = v_mode,value = 1,command=lambda *event:changeUser(v_mode))
     menubar.add_cascade(label='用户',menu=catalog)
-    menubar.add_command(label='使用说明',command=(lambda:msgbox.showinfo('使用说明',"基于MD5的RSA文本加密的python实现")))
+    menubar.add_command(label='使用说明',command=(lambda:msgbox.showinfo('使用说明',"     基于MD5的RSA文本加密的python实现     \n\n1.输入公钥与A用户的密钥并生成A方密钥\n2.输入公钥、B用户的密钥与A密钥并生成B方密钥\n3.输入B方密钥\n4.选择用户进行加解密")))
     menubar.add_command(label='关于',command=(lambda:msgbox.showinfo('关于',"Copyright (c) 2018 KaiboShen\n            qq:973689813")))
     win.config(menu = menubar)
     root = Frame(win,bg='#00aaff',borderwidth=25)
