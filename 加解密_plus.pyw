@@ -100,7 +100,7 @@ def Lock(*event):
         if pre[0]:
             PrimaryEncrypt=base64.b64encode(PlainText.encode()).decode()
             SecondaryEncrypt=[]
-            index=15
+            index=13
             for i in list(PrimaryEncrypt):
                 if index==32:index=0
                 SecondaryEncrypt.append(chr(ord(i)+ord(pre[1][index])))
@@ -116,35 +116,40 @@ def Unlock(*event):
     else:
         pre=Pretreatment()
         if pre[0]:
+            #作弊了一下下，用于验证A、B方密钥是否修改
             try:
-                #下方的try作弊了一下下，用于验证A、B方密钥是否修改
-                try:
-                    if pre[2]["User"]=='A':
-                        publickey=hashlib.md5(pre[2]["PublicKey"].encode()).hexdigest()
-                        privatekey=hashlib.md5(pre[2]["PrivateKey2"].encode()).hexdigest()
-                        exactkey="".join([chr(32+(ord(publickey[i])+ord(privatekey[i]))%68) for i in range(32)])
-                        if exactkey!=pre[2]["ConfuseKey1"]:
-                            msgbox.showinfo('警告',"密钥有误,或对方密钥改变\n          解密失败")
-                    else:
-                        publickey=hashlib.md5(pre[2]["PublicKey"].encode()).hexdigest()
-                        privatekey=hashlib.md5(pre[2]["PrivateKey1"].encode()).hexdigest()
-                        exactkey="".join([chr(32+(ord(publickey[i])+ord(privatekey[i]))%68) for i in range(32)])
-                        if exactkey!=pre[2]["ConfuseKey2"]:
-                            msgbox.showinfo('警告',"密钥有误,或对方密钥改变\n          解密失败")
-                except:
-                    pass
-                PrimaryDecrypt=[]
-                index=15
-                for i in list(CipherText):
-                    if index==32:index=0
-                    PrimaryDecrypt.append(chr(ord(i)-ord(pre[1][index])))
-                    index+=1
-                SecondaryDecrypt=base64.b64decode("".join(PrimaryDecrypt).encode()).decode()
-                t1.delete(1.0,END)
-                t1.insert(END,SecondaryDecrypt)
+                if pre[2]["User"]=='A':
+                    publickey=hashlib.md5(pre[2]["PublicKey"].encode()).hexdigest()
+                    privatekey=hashlib.md5(pre[2]["PrivateKey2"].encode()).hexdigest()
+                    exactkey="".join([chr(32+(ord(publickey[i])+ord(privatekey[i]))%68) for i in range(32)])
+                    if exactkey!=pre[2]["ConfuseKey1"]:
+                        msgbox.showinfo('警告',"公钥错误,或对方密钥改变")
+                        t1.delete(1.0,END)
+                        return
+                else:
+                    publickey=hashlib.md5(pre[2]["PublicKey"].encode()).hexdigest()
+                    privatekey=hashlib.md5(pre[2]["PrivateKey1"].encode()).hexdigest()
+                    exactkey="".join([chr(32+(ord(publickey[i])+ord(privatekey[i]))%68) for i in range(32)])
+                    if exactkey!=pre[2]["ConfuseKey2"]:
+                        msgbox.showinfo('警告',"公钥错误,或对方密钥改变")
+                        t1.delete(1.0,END)
+                        return
             except:
-                msgbox.showinfo('警告',"密钥有误,或对方密钥改变\n          解密失败")
-
+                pass
+            else:
+                try:
+                    PrimaryDecrypt=[]
+                    index=13
+                    for i in list(CipherText):
+                        if index==32:index=0
+                        PrimaryDecrypt.append(chr(ord(i)-ord(pre[1][index])))
+                        index+=1
+                    SecondaryDecrypt=base64.b64decode("".join(PrimaryDecrypt).encode()).decode()
+                    t1.delete(1.0,END)
+                    t1.insert(END,SecondaryDecrypt)
+                except:
+                    t1.delete(1.0,END)
+                    msgbox.showinfo('警告',"对方密钥有误\n  解密失败")
 
 def UpdateKey(frame,*event):
     key=LoadKey()
@@ -296,7 +301,7 @@ if __name__ == '__main__':
     catalog.add_radiobutton(label = "UserA",variable = v_mode,value = 0,command=lambda *event:changeUser(v_mode))
     catalog.add_radiobutton(label = "UserB",variable = v_mode,value = 1,command=lambda *event:changeUser(v_mode))
     menubar.add_cascade(label='用户',menu=catalog)
-    menubar.add_command(label='使用说明',command=(lambda:msgbox.showinfo('使用说明',"              基于MD5的类RSA文本加密     \n\n1.输入公钥与A用户的私钥并生成A方密钥\n2.输入公钥、B用户的私钥与A方密钥并生成B方密钥\n3.输入B方密钥\n4.选择用户进行加解密")))
+    menubar.add_command(label='使用说明',command=(lambda:msgbox.showinfo('使用说明',"              基于MD5的非对称文本加密     \n\n1.输入公钥与A用户的私钥并生成A方密钥\n2.输入公钥、B用户的私钥与A方密钥并生成B方密钥\n3.输入B方密钥\n4.选择用户进行加解密")))
     menubar.add_command(label='关于',command=(lambda:msgbox.showinfo('关于',"Copyright (c) 2018 KaiboShen\n            qq:973689813")))
     win.config(menu = menubar)
     root = Frame(win,bg='#00aaff',borderwidth=25)
