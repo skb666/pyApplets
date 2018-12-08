@@ -56,6 +56,7 @@ def Pretreatment():
         if not key.get("PublicKey") or not key.get("PrivateKey1") or not key.get("ConfuseKey1"):
             msgbox.showinfo('提示',"请完善密钥信息")
             ManageKey()
+            return [False]
         else:
             if len(key.get("ConfuseKey1"))!=32:
                 msgbox.showinfo('提示',"请输入正确的密钥")
