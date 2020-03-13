@@ -1,8 +1,3 @@
-# -*- coding:utf-8 -*-
-
-__author__ = "HouZhipeng"
-__blog__ = "https://blog.csdn.net/Zhipeng_Hou"
-
 import os
 
 import qrcode
