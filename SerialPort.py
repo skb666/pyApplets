@@ -1,5 +1,6 @@
 import serial
 import struct
+import warnings
 
 
 class SerialPort(object):
@@ -42,19 +43,37 @@ class SerialPort(object):
 
     def setData(self, **vardict):
         for key, value in vardict.items():
-            self.__sendDict[key] = value
+            if type(value) in [list, tuple]:
+                if self.__sendDict.get(key, None) != None:
+                    self.__sendDict[key] = value
+                else:
+                    warnings.warn(f"wrong key: {key}")
+            else:
+                if self.__sendDict.get(key, None) != None:
+                    self.__sendDict[key] = [value]
+                else:
+                    warnings.warn(f"wrong key: {key}")
 
     def appendData(self, **vardict):
         for key, value in vardict.items():
-            if type(value) == list:
-                self.__sendDict[key].extend(value)
+            if type(value) in [list, tuple]:
+                if self.__sendDict.get(key, None) != None:
+                    self.__sendDict[key].extend(value)
+                else:
+                    warnings.warn(f"wrong key: {key}")
             else:
-                self.__sendDict[key].append(value)
+                if self.__sendDict.get(key, None) != None:
+                    self.__sendDict[key].append(value)
+                else:
+                    warnings.warn(f"wrong key: {key}")
 
     def getReceive(self):
         return self.__receiveDict
 
-    def sendData(self):
+    def sendData(self, **vardict):
+        if vardict:
+            self.clearBuffer()
+            self.setData(**vardict)
         # 包头
         _message = b'\xa5'
         # 数据数量
@@ -73,7 +92,7 @@ class SerialPort(object):
         # 校验和
         checksum = sum(_message[1:])
         _message += struct.pack('B', checksum%256)
-        # 包尾
+        # 包尾 
         _message += b'\x5a'
         # 发送数据
         self.__sp.write(_message)
