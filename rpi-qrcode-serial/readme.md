@@ -55,8 +55,9 @@ sudo vim /etc/udev/rules.d/90-local.rules
 KERNEL=="ttyS0*", OWNER="root", GROUP="tty", MODE="0666" 
 ```
 
+开机自启设置
+
 ```bash
-#开机自启设置
 sudo vim /etc/rc.local
 ```
 
