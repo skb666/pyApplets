@@ -49,12 +49,18 @@ sudo systemctl disable serial-getty@ttyS0.service
 sudo systemctl mask serial-getty@ttyS0.service
 sudo vim /etc/udev/rules.d/90-local.rules
 ```
-
 写入
 
 ```
 KERNEL=="ttyS0*", OWNER="root", GROUP="tty", MODE="0666" 
 ```
+
+```bash
+#开机自启设置
+sudo vim /etc/rc.local
+```
+
+在 "exit 0 "前加入 "/usr/bin/python + main.py的绝对路径"
 
 重启
 
