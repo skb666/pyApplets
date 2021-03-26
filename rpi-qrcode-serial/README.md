@@ -11,7 +11,7 @@ sudo apt update && sudo apt upgrade
 ## 2、软件包与python运行库安装
 
 ```bash
-sudo apt install python3 python3-pip python3-dev
+sudo apt install vim git python3 python3-pip python3-dev
 #将python默认版本设置为python3
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python2 1
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 2
