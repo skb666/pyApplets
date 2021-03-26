@@ -65,13 +65,14 @@ class Detector(object):
             if len(contours):
                 cnt = contours[0]
                 (x, y, w, h) = cv2.boundingRect(cnt)
-                if w*h > 3000:
+                if 4000 > w*h > 3000:
                     cv2.rectangle(self.img, (x, y), (x + w, y + h), (255, 255, 255), 2)
                     cv2.putText(self.img, color, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
                     self.status = 2
                     self.result.append({
                         "type": "Blocks of color",
                         "content": color,
+                        "size": w*h,
                     })
 
     def run(self, img=None):
