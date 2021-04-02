@@ -11,6 +11,7 @@ task_end_flag= False
 task_running = False
 
 hsv = None
+color_dict = {'red': 1, 'green': 2, 'blue': 3}
 
 # 颜色采集
 def mouse_click(event, x, y, flags, para):
@@ -56,42 +57,68 @@ def display():
             break
         if task_end_flag:
             break
-    task_running = False
     cam.release()
     cv2.destroyAllWindows()
+    task_running = False
 
-def detect_qrcode(detector, sp):
-    global task_end_flag, DEBUG, task_running
+def detect_qrcode(detector, sp, sign=0):
+    global task_end_flag, DEBUG, task_running, color_dict
     task_running = True
     cam = cv2.VideoCapture(0)
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT,240)
+    code128 = []
     # 识别二维码
+    code128.clear()
     while True:
         # 读取当前帧
         ret, frame = cam.read()
         # 对图像进行识别
         detector.detectQrcode(frame)
-        # 判断识别状态
-        if detector.status == 1:
-            res_qrcode = list(detector.result[0]['content'])
-            t = [int(c) for c in res_qrcode]
-            if DEBUG:
-                print(res_qrcode, t)
-            sp.sendData(_byte=t)
-            break
+
+        # 判断识别状态(0: 3数字二维码, 1: 3+3数字二维码, 2: 3颜色条形码)
+        if sign == 0:
+            if detector.status == 1:
+                res_qrcode = list(detector.result[0]['content'])
+                t = [int(c) for c in res_qrcode]
+                if DEBUG:
+                    print(res_qrcode, t)
+                sp.sendData(_byte=t)
+                break
+        elif sign == 1:
+            if detector.status == 1:
+                res_qrcode = list(detector.result[0]['content'].replace('+', ''))
+                t = [int(c) for c in res_qrcode]
+                if DEBUG:
+                    print(res_qrcode, t)
+                sp.sendData(_byte=t)
+                break
+        elif sign == 2:
+            if len(code128) < 3:
+                if detector.status == 1:
+                    res_qrcode = detector.result[0]['content'].strip()
+                    if res_qrcode not in code128:
+                        if DEBUG:
+                            print(res_qrcode)
+                        code128.append(res_qrcode)
+            else:
+                t = [color_dict[c] for c in code128]
+                if DEBUG:
+                    print(code128, t)
+                sp.sendData(_byte=t)
+                break
+
         if task_end_flag:
             break
-    task_running = False
     cam.release()
+    task_running = False
 
 def detect_color(detector, sp):
-    global task_end_flag, DEBUG, task_running
+    global task_end_flag, DEBUG, task_running, color_dict
     task_running = True
     cam = cv2.VideoCapture(0)
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT,240)
-    color_dict = {'red': 1, 'green': 2, 'blue': 3}
     res_color = []
     # 识别色块
     res_color.clear()
@@ -106,7 +133,7 @@ def detect_color(detector, sp):
             for result in detector.result:
                 if result['content'] not in res_color:
                     if DEBUG:
-                        print(result['size'])
+                        print(result['content'], result['size'])
                     res_color.append(result['content'])
                     cnt += 1
         if task_end_flag:
@@ -116,8 +143,8 @@ def detect_color(detector, sp):
         if DEBUG:
             print(res_color, t)
         sp.sendData(_byte=t)
-    task_running = False
     cam.release()
+    task_running = False
 
 def main():
     global task_end_flag, task, DEBUG, task_running
@@ -133,7 +160,7 @@ def main():
                     detect_type = sp.getReceive()['byte'][0]
                     if DEBUG:
                         print(detect_type)
-
+                    # 3数字二维码
                     if detect_type == 1:
                         if task is not None and task_running:
                             task_end_flag = True
@@ -141,12 +168,29 @@ def main():
                             task_end_flag = False
                         task = Thread(target=detect_qrcode, args=[detector, sp,])
                         task.start()
+                    # 3色块
                     elif detect_type == 2:
                         if task is not None and task_running:
                             task_end_flag = True
                             task.join()
                             task_end_flag = False
                         task = Thread(target=detect_color, args=[detector, sp,])
+                        task.start()
+                    # 3+3数字二维码
+                    elif detect_type == 3:
+                        if task is not None and task_running:
+                            task_end_flag = True
+                            task.join()
+                            task_end_flag = False
+                        task = Thread(target=detect_qrcode, args=[detector, sp, 1])
+                        task.start()
+                    # 3颜色条形码
+                    elif detect_type == 4:
+                        if task is not None and task_running:
+                            task_end_flag = True
+                            task.join()
+                            task_end_flag = False
+                        task = Thread(target=detect_qrcode, args=[detector, sp, 2])
                         task.start()
                 except:
                     pass
