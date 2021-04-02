@@ -25,15 +25,17 @@ class Detector(object):
             self.img = img.copy()
         elif self.img is None:
             raise Exception("self.img is None")
+        # 复位结果
+        self.reset()
         # 转为灰度图像
         gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
         barcodes = pyzbar.decode(gray)
         for barcode in barcodes:
             # 提取二维码的位置,然后用边框标识出来在视频中
             (x, y, w, h) = barcode.rect
-            cv2.rectangle(self.img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.rectangle(self.img, (x, y), (x + w, y + h), (255, 255, 255), 2)
             # 在图像上面显示识别出来的内容
-            cv2.putText(self.img, f"{barcode.type}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            cv2.putText(self.img, f"{barcode.type}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
             # 打印识别后的内容
             self.result.append({
                 "type": barcode.type,
@@ -52,6 +54,9 @@ class Detector(object):
             "blue": {"lower": np.array([105, 120, 58]), "upper": np.array([125, 255, 255])},
             "green": {"lower": np.array([60, 60, 80]), "upper": np.array([80, 255, 255])},
         }
+
+        # 复位结果
+        self.reset()
         #把BGR图像转换为HSV格式
         hsv_img = cv2.cvtColor(self.img, cv2.COLOR_BGR2HSV)
         # cv显示识别到的色块
@@ -67,7 +72,7 @@ class Detector(object):
                 (x, y, w, h) = cv2.boundingRect(cnt)
                 if 4000 > w*h > 3000:
                     cv2.rectangle(self.img, (x, y), (x + w, y + h), (255, 255, 255), 2)
-                    cv2.putText(self.img, color, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                    cv2.putText(self.img, color, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
                     self.status = 2
                     self.result.append({
                         "type": "Blocks of color",
@@ -80,7 +85,6 @@ class Detector(object):
             self.img = img.copy()
         elif self.img is None:
             raise Exception("self.img is None")
-        self.reset()
         self.detectQrcode()
         if self.status == 0:
             self.detectColor()
