@@ -51,6 +51,7 @@ class Detector(object):
 
         colors = {
             "red": {"lower": np.array([160, 85, 60]),"upper": np.array([180, 255, 255])},
+            "red1": {"lower": np.array([0, 180, 110]),"upper": np.array([8, 255, 255])},
             "blue": {"lower": np.array([105, 120, 58]), "upper": np.array([125, 255, 255])},
             "green": {"lower": np.array([60, 60, 80]), "upper": np.array([80, 255, 255])},
         }
