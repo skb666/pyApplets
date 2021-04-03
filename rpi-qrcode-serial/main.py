@@ -11,7 +11,7 @@ task_end_flag= False
 task_running = False
 
 hsv = None
-color_dict = {'red': 1, 'green': 2, 'blue': 3}
+color_dict = {'red': 1, 'red1': 1, 'green': 2, 'blue': 3}
 
 # 颜色采集
 def mouse_click(event, x, y, flags, para):
@@ -134,8 +134,13 @@ def detect_color(detector, sp):
                 if result['content'] not in res_color:
                     if DEBUG:
                         print(result['content'], result['size'])
-                    res_color.append(result['content'])
-                    cnt += 1
+                    if result['content'] in ['red', 'red1']:
+                        if 'red' not in res_color:
+                            res_color.append('red')
+                            cnt += 1
+                    else:
+                        res_color.append(result['content'])
+                        cnt += 1
         if task_end_flag:
             break
     if not task_end_flag:
