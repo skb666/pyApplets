@@ -1,106 +1,31 @@
-#!/usr/bin/python3
+import sys
+from SerialPort import *
+from Detector import *
+from threading import Thread
 
-import cv2
-import pyzbar.pyzbar as pyzbar
-import numpy as np
+DEBUG = False
+DISPLAY = False
 
+task = None
+task_end_flag= False
+task_running = False
 
-class Detector(object):
-    """docstring for Detector"""
-    def __init__(self, img=None):
-        if img is not None:
-            self.img = img.copy()
-        else:
-            self.img = None
-        #0(None),1(QRcode),2(Color)
-        self.status = 0
-        self.result = []
+hsv = None
+color_dict = {'red': 1, 'red1': 1, 'green': 2, 'blue': 3}
 
-    def reset(self):
-        self.status = 0
-        self.result.clear();
+# 颜色采集
+def mouse_click(event, x, y, flags, para):
+    global hsv
+    if event == cv2.EVENT_LBUTTONDOWN:  # 左边鼠标点击
+        print('#'*25)
+        print('PIX:', x, y)
+        #print("BGR:", frame[y, x])
+        #print("GRAY:", gray[y, x])
+        print("HSV:", hsv[y, x])
 
-    def detectQrcode(self, img=None):
-        if img is not None:
-            self.img = img.copy()
-        elif self.img is None:
-            raise Exception("self.img is None")
-        # 复位结果
-        self.reset()
-        # 转为灰度图像
-        gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
-        barcodes = pyzbar.decode(gray)
-        for barcode in barcodes:
-            # 提取二维码的位置,然后用边框标识出来在视频中
-            (x, y, w, h) = barcode.rect
-            cv2.rectangle(self.img, (x, y), (x + w, y + h), (255, 255, 255), 2)
-            # 在图像上面显示识别出来的内容
-            cv2.putText(self.img, f"{barcode.type}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-            # 打印识别后的内容
-            self.result.append({
-                "type": barcode.type,
-                "content": barcode.data.decode('utf-8'),
-            })
-        if len(barcodes): self.status = 1
-
-    def detectColor(self, img=None):
-        if img is not None:
-            self.img = img.copy()
-        elif self.img is None:
-            raise Exception("self.img is None")
-
-        colors = {
-            "red": {"lower": np.array([160, 85, 60]),"upper": np.array([180, 255, 255])},
-            "red1": {"lower": np.array([0, 180, 110]),"upper": np.array([8, 255, 255])},
-            "blue": {"lower": np.array([105, 120, 58]), "upper": np.array([125, 255, 255])},
-            "green": {"lower": np.array([60, 60, 80]), "upper": np.array([80, 255, 255])},
-        }
-
-        # 复位结果
-        self.reset()
-        #把BGR图像转换为HSV格式
-        hsv_img = cv2.cvtColor(self.img, cv2.COLOR_BGR2HSV)
-        # cv显示识别到的色块
-        for color, threshold in colors.items():
-            #mask是把HSV图片中在颜色范围内的区域变成白色，其他区域变成黑色
-            mask =  cv2.inRange(hsv_img, threshold["lower"], threshold["upper"])
-            mask = cv2.medianBlur(mask, 7)  # 中值滤波
-            contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)  # 轮廓检测
-            contours.sort(key=lambda x: cv2.contourArea(x), reverse=True)
-            # for cnt in contours:
-            if len(contours):
-                cnt = contours[0]
-                (x, y, w, h) = cv2.boundingRect(cnt)
-                if 4000 > w*h > 3000:
-                    cv2.rectangle(self.img, (x, y), (x + w, y + h), (255, 255, 255), 2)
-                    cv2.putText(self.img, color, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-                    self.status = 2
-                    self.result.append({
-                        "type": "Blocks of color",
-                        "content": color,
-                        "size": w*h,
-                    })
-
-    def run(self, img=None):
-        if img is not None:
-            self.img = img.copy()
-        elif self.img is None:
-            raise Exception("self.img is None")
-        self.detectQrcode()
-        if self.status == 0:
-            self.detectColor()
-
-
-if __name__ == '__main__':
-    # 颜色采集
-    def mouse_click(event, x, y, flags, para):
-        if event == cv2.EVENT_LBUTTONDOWN:  # 左边鼠标点击
-            print('#'*25)
-            print('PIX:', x, y)
-            print("BGR:", frame[y, x])
-            print("GRAY:", gray[y, x])
-            print("HSV:", hsv[y, x])
-
+def display():
+    global hsv, task_end_flag, task_running, DISPLAY
+    task_running = True
     detector = Detector()
     #cv2.namedWindow("cam", 1)
     #video = "http://admin:admin@192.168.43.1:8081/"
@@ -110,11 +35,11 @@ if __name__ == '__main__':
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
     cv2.setMouseCallback("cam", mouse_click)
-    result_last = None
+    result_last = {}
     while True:
         # 读取当前帧
         ret, frame = cam.read()
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        #gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         # 对图像进行识别
         detector.run(frame)
@@ -124,10 +49,168 @@ if __name__ == '__main__':
                 if detector.status == 1:
                     print(f"检测到二维码> 类别: {result['type']}, 内容: {result['content']}")
                 else:
-                    print(f"检测到色块> {result['content']}")
+                    print(f"检测到色块> 颜色: {result['content']}, 大小: {result['size']}")
         cv2.imshow("cam", detector.img)
         # 按ESC键退出
         if (cv2.waitKey(5) == 27):
+            DISPLAY = False
+            break
+        if task_end_flag:
             break
     cam.release()
     cv2.destroyAllWindows()
+    task_running = False
+
+def detect_qrcode(detector, sp, sign=0):
+    global task_end_flag, DEBUG, task_running, color_dict
+    task_running = True
+    cam = cv2.VideoCapture(0)
+    cam.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+    cam.set(cv2.CAP_PROP_FRAME_HEIGHT,240)
+    code128 = []
+    # 识别二维码
+    code128.clear()
+    while True:
+        # 读取当前帧
+        ret, frame = cam.read()
+        # 对图像进行识别
+        detector.detectQrcode(frame)
+
+        # 判断识别状态(0: 3数字二维码, 1: 3+3数字二维码, 2: 3颜色条形码)
+        if sign == 0:
+            if detector.status == 1:
+                res_qrcode = list(detector.result[0]['content'])
+                t = [int(c) for c in res_qrcode]
+                if DEBUG:
+                    print(res_qrcode, t)
+                sp.sendData(_byte=t)
+                break
+        elif sign == 1:
+            if detector.status == 1:
+                res_qrcode = list(detector.result[0]['content'].replace('+', ''))
+                t = [int(c) for c in res_qrcode]
+                if DEBUG:
+                    print(res_qrcode, t)
+                sp.sendData(_byte=t)
+                break
+        elif sign == 2:
+            if len(code128) < 3:
+                if detector.status == 1:
+                    res_qrcode = detector.result[0]['content'].strip()
+                    if res_qrcode not in code128:
+                        if DEBUG:
+                            print(res_qrcode)
+                        code128.append(res_qrcode)
+            else:
+                t = [color_dict[c] for c in code128]
+                if DEBUG:
+                    print(code128, t)
+                sp.sendData(_byte=t)
+                break
+
+        if task_end_flag:
+            break
+    cam.release()
+    task_running = False
+
+def detect_color(detector, sp):
+    global task_end_flag, DEBUG, task_running, color_dict
+    task_running = True
+    cam = cv2.VideoCapture(0)
+    cam.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+    cam.set(cv2.CAP_PROP_FRAME_HEIGHT,240)
+    res_color = []
+    # 识别色块
+    res_color.clear()
+    cnt = 0
+    while cnt < 3:
+        # 读取当前帧
+        ret, frame = cam.read()
+        # 对图像进行识别
+        detector.detectColor(frame)
+        # 判断识别状态
+        if detector.status == 2:
+            for result in detector.result:
+                if result['content'] not in res_color:
+                    if DEBUG:
+                        print(result['content'], result['size'])
+                    if result['content'] in ['red', 'red1']:
+                        if 'red' not in res_color:
+                            res_color.append('red')
+                            cnt += 1
+                    else:
+                        res_color.append(result['content'])
+                        cnt += 1
+        if task_end_flag:
+            break
+    if not task_end_flag:
+        t = [color_dict[color] for color in res_color]
+        if DEBUG:
+            print(res_color, t)
+        sp.sendData(_byte=t)
+    cam.release()
+    task_running = False
+
+def main():
+    global task_end_flag, task, DEBUG, task_running
+
+    detector = Detector()
+
+    with SerialPort() as sp:
+        while True:
+            if sp.receiveData():
+                # 复位检测器
+                detector.reset()
+                try:
+                    detect_type = sp.getReceive()['byte'][0]
+                    if DEBUG:
+                        print(detect_type)
+                    # 3数字二维码
+                    if detect_type == 1:
+                        if task is not None and task_running:
+                            task_end_flag = True
+                            task.join()
+                            task_end_flag = False
+                        task = Thread(target=detect_qrcode, args=[detector, sp,])
+                        task.start()
+                    # 3色块
+                    elif detect_type == 2:
+                        if task is not None and task_running:
+                            task_end_flag = True
+                            task.join()
+                            task_end_flag = False
+                        task = Thread(target=detect_color, args=[detector, sp,])
+                        task.start()
+                    # 3+3数字二维码
+                    elif detect_type == 3:
+                        if task is not None and task_running:
+                            task_end_flag = True
+                            task.join()
+                            task_end_flag = False
+                        task = Thread(target=detect_qrcode, args=[detector, sp, 1])
+                        task.start()
+                    # 3颜色条形码
+                    elif detect_type == 4:
+                        if task is not None and task_running:
+                            task_end_flag = True
+                            task.join()
+                            task_end_flag = False
+                        task = Thread(target=detect_qrcode, args=[detector, sp, 2])
+                        task.start()
+                except:
+                    pass
+            else:
+                if not task_running and DISPLAY:
+                    task = Thread(target=display)
+                    task.start()
+
+if __name__ == '__main__':
+    if 'DEBUG' in sys.argv:
+        DEBUG = True
+
+    if 'DISPLAY' in sys.argv:
+        DISPLAY = True
+        task = Thread(target=display)
+        task.start()
+
+    main()
