@@ -50,10 +50,10 @@ class Detector(object):
             raise Exception("self.img is None")
 
         colors = {
-            "red": {"lower": np.array([160, 85, 60]),"upper": np.array([180, 255, 255])},
-            "red1": {"lower": np.array([0, 180, 110]),"upper": np.array([8, 255, 255])},
-            "blue": {"lower": np.array([105, 120, 58]), "upper": np.array([125, 255, 255])},
-            "green": {"lower": np.array([60, 60, 80]), "upper": np.array([80, 255, 255])},
+            "red": {"lower": np.array([156, 85, 60]),"upper": np.array([180, 255, 255])},
+            "red1": {"lower": np.array([0, 80, 55]),"upper": np.array([20, 255, 255])},
+            "blue": {"lower": np.array([100, 120, 50]), "upper": np.array([125, 255, 255])},
+            "green": {"lower": np.array([65, 160, 60]), "upper": np.array([87, 255, 255])},
         }
 
         # 复位结果
@@ -71,7 +71,7 @@ class Detector(object):
             if len(contours):
                 cnt = contours[0]
                 (x, y, w, h) = cv2.boundingRect(cnt)
-                if 4000 > w*h > 3000:
+                if 8000 > w*h > 2700:
                     cv2.rectangle(self.img, (x, y), (x + w, y + h), (255, 255, 255), 2)
                     cv2.putText(self.img, color, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
                     self.status = 2
