@@ -1,4 +1,5 @@
 import sys
+import time
 from SerialPort import *
 from Detector import *
 from threading import Thread
@@ -59,6 +60,15 @@ def display():
             break
     cam.release()
     cv2.destroyAllWindows()
+    task_running = False
+
+def waiting():
+    global task_end_flag, task_running
+    task_running = True
+    while True:
+        time.sleep(0.001)
+        if task_end_flag:
+            break
     task_running = False
 
 def detect_qrcode(detector, sp, sign=0):
@@ -156,7 +166,7 @@ def main():
 
     detector = Detector()
 
-    with SerialPort() as sp:
+    with SerialPort('/dev/ttyS0', 9600, 3.0) as sp:
         while True:
             if sp.receiveData():
                 # 复位检测器
@@ -165,6 +175,14 @@ def main():
                     detect_type = sp.getReceive()['byte'][0]
                     if DEBUG:
                         print(detect_type)
+                    # 等待
+                    if detect_type == 0:
+                        if task is not None and task_running:
+                            task_end_flag = True
+                            task.join()
+                            task_end_flag = False
+                        task = Thread(target=waiting)
+                        task.start()
                     # 3数字二维码
                     if detect_type == 1:
                         if task is not None and task_running:
