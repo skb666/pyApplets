@@ -184,7 +184,7 @@ def main():
                         task = Thread(target=waiting)
                         task.start()
                     # 3数字二维码
-                    if detect_type == 1:
+                    elif detect_type == 1:
                         if task is not None and task_running:
                             task_end_flag = True
                             task.join()
