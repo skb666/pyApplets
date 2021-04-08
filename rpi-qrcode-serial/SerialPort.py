@@ -4,7 +4,7 @@ import warnings
 
 
 class SerialPort(object):
-    def __init__(self, port="/dev/ttyS0", baudrate=115200, timeout=5.0):
+    def __init__(self, port="/dev/ttyS0", baudrate=9600, timeout=None):
         # print('__init__')
         self.__sp = serial.Serial(port, baudrate, timeout=timeout)
         self.__sendDict = {
@@ -101,53 +101,54 @@ class SerialPort(object):
         bt = self.__sp.read()
         #print(bt.hex())
         # 检测包头
-        if bt == b'\xa5':
-            # 获取数据数量
-            _message = self.__sp.read(6)
-            num = sum(map((lambda x, y: x*y), [1, 2, 4, 4, 8, 8], _message))
-            # 获取数据本体
-            _message += self.__sp.read(num)
-            # 检测校验和
-            checksum = struct.pack('B', sum(_message)%256)
-            if checksum == self.__sp.read():
-                # 检测包尾
-                bw = self.__sp.read()
-                if bw == b'\x5a':
-                    # 解包数据数量
-                    lByte, lShort, lInt, lFloat, lLongLong, lDouble = struct.unpack('BBBBBB', _message[:6])
-                    # 清空接收缓存
-                    self.__clearReceiveBuffer()
-                    # 解包数据本体
-                    _format = '>' + 'B'*lByte + 'h'*lShort + 'i'*lInt + 'f'*lFloat + 'q'*lLongLong + 'd'*lDouble
-                    receiveUnpack = struct.unpack(_format, _message[6:])
-                    receiveUnpack=list(reversed(receiveUnpack))
-                    # print(receiveUnpack)
-                    # 将解包后的数据填入接收缓存
-                    if lByte:
-                        while lByte:
-                            self.__receiveDict["byte"].append(receiveUnpack.pop())
-                            lByte -= 1
-                    if lShort:
-                        while lShort:
-                            self.__receiveDict["short"].append(receiveUnpack.pop())
-                            lShort -= 1
-                    if lInt:
-                        while lInt:
-                            self.__receiveDict["int"].append(receiveUnpack.pop())
-                            lInt -= 1
-                    if lFloat:
-                        while lFloat:
-                            self.__receiveDict["float"].append(receiveUnpack.pop())
-                            lFloat -= 1
-                    if lLongLong:
-                        while lLongLong:
-                            self.__receiveDict["long long"].append(receiveUnpack.pop())
-                            lLongLong -= 1
-                    if lDouble:
-                        while lDouble:
-                            self.__receiveDict["double"].append(receiveUnpack.pop())
-                            lDouble -= 1
-                    return True
+        if bt != b'\xa5':
+            return False
+        # 获取数据数量
+        _message = self.__sp.read(6)
+        num = sum(map((lambda x, y: x*y), [1, 2, 4, 4, 8, 8], _message))
+        # 获取数据本体
+        _message += self.__sp.read(num)
+        # 检测校验和
+        checksum = struct.pack('B', sum(_message)%256)
+        if checksum == self.__sp.read():
+            # 检测包尾
+            bw = self.__sp.read()
+            if bw == b'\x5a':
+                # 解包数据数量
+                lByte, lShort, lInt, lFloat, lLongLong, lDouble = struct.unpack('BBBBBB', _message[:6])
+                # 清空接收缓存
+                self.__clearReceiveBuffer()
+                # 解包数据本体
+                _format = '>' + 'B'*lByte + 'h'*lShort + 'i'*lInt + 'f'*lFloat + 'q'*lLongLong + 'd'*lDouble
+                receiveUnpack = struct.unpack(_format, _message[6:])
+                receiveUnpack=list(reversed(receiveUnpack))
+                # print(receiveUnpack)
+                # 将解包后的数据填入接收缓存
+                if lByte:
+                    while lByte:
+                        self.__receiveDict["byte"].append(receiveUnpack.pop())
+                        lByte -= 1
+                if lShort:
+                    while lShort:
+                        self.__receiveDict["short"].append(receiveUnpack.pop())
+                        lShort -= 1
+                if lInt:
+                    while lInt:
+                        self.__receiveDict["int"].append(receiveUnpack.pop())
+                        lInt -= 1
+                if lFloat:
+                    while lFloat:
+                        self.__receiveDict["float"].append(receiveUnpack.pop())
+                        lFloat -= 1
+                if lLongLong:
+                    while lLongLong:
+                        self.__receiveDict["long long"].append(receiveUnpack.pop())
+                        lLongLong -= 1
+                if lDouble:
+                    while lDouble:
+                        self.__receiveDict["double"].append(receiveUnpack.pop())
+                        lDouble -= 1
+                return True
         return False
 
 
