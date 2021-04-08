@@ -75,8 +75,12 @@ def detect_qrcode(detector, sp, sign=0):
     global task_end_flag, DEBUG, task_running, color_dict
     task_running = True
     cam = cv2.VideoCapture(0)
-    cam.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
-    cam.set(cv2.CAP_PROP_FRAME_HEIGHT,240)
+    if sign == 2:
+        cam.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cam.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
+    else:
+        cam.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+        cam.set(cv2.CAP_PROP_FRAME_HEIGHT,240)
     code128 = []
     # 识别二维码
     code128.clear()
@@ -112,7 +116,23 @@ def detect_qrcode(detector, sp, sign=0):
                             print(res_qrcode)
                         code128.append(res_qrcode)
             else:
-                t = [color_dict[c] for c in code128]
+                t = [color_dict.get(c, 0) for c in code128]
+                if 0 in t:
+                    if t.count(0) == 1:
+                        for i in range(3):
+                            if t[i] == 0:
+                                if 1 not in t:
+                                    t[i] = 1
+                                elif 2 not in t:
+                                    t[i] = 2
+                                else:
+                                    t[i] = 3
+                                break
+                    else:
+                        if DEBUG:
+                            print('多于1个条形码识别错误')
+                        else:
+                            raise Exception('多于1个条形码识别错误')
                 if DEBUG:
                     print(code128, t)
                 sp.sendData(_byte=t)
@@ -166,7 +186,7 @@ def main():
 
     detector = Detector()
 
-    with SerialPort('/dev/ttyS0', 9600, 3.0) as sp:
+    with SerialPort('/dev/ttyS0', 9600, None) as sp:
         while True:
             if sp.receiveData():
                 # 复位检测器
@@ -184,7 +204,7 @@ def main():
                         task = Thread(target=waiting)
                         task.start()
                     # 3数字二维码
-                    elif detect_type == 1:
+                    if detect_type == 1:
                         if task is not None and task_running:
                             task_end_flag = True
                             task.join()
