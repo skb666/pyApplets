@@ -3,7 +3,7 @@ import time
 import base64
 import rsa
 import csv
-from bs4 import BeautifulSoup as bs
+import re
 
 
 def getScores(username, password):
@@ -88,8 +88,7 @@ def getScores(username, password):
         rsa_mm = base64.b64encode(rsa.encrypt(password, mm_key))
         #获取认证口令csrftoken
         page = session.get(url=website["login"]["url"], headers=website["login"]["headers"])
-        soup = bs(page.text,"html.parser")
-        csrftoken = soup.find(id="csrftoken").get("value")
+        csrftoken = re.findall(r'name="csrftoken".*?"(.*?)"', page.text)[0]
 
         #登入
         postdata = {'csrftoken': csrftoken, 'yhm': username, 'mm': rsa_mm}
@@ -124,7 +123,6 @@ if __name__ == '__main__':
     #学号 | 密码
     account = [
         ("1832331405", b"我的密码"),
-        ("1832331431", b"你的密码"),
     ]
 
     for username, password in account:
