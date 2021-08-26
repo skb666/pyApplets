@@ -95,6 +95,9 @@ def getScores(username, password, filename=None):
         #登入
         postdata = {'csrftoken': csrftoken, 'yhm': username, 'mm': rsa_mm}
         reponse = session.post(url=website["login"]["url"], headers=website["login"]["headers"], data=postdata)
+        if re.findall("用户名或密码不正确，请重新输入！", reponse.text):
+            print(f"登入失败! (> ^ <)\n\t{username}\n")
+            return
 
         #获取成绩明细
         response = session.post(website["scores"]["url"], headers=website["scores"]["headers"], data=website["scores"]["data"])
@@ -120,17 +123,17 @@ def getScores(username, password, filename=None):
         else:
             print(f"成绩获取失败! (V ~ V)\n\t{username}\n")
     except Exception as err:
-        print(f"出错啦！ (> ^ <)\n\t{err}\n")
+        print(f"出错啦! (> ^ <)\n\t{err}\n")
 
     del session
 
 
 if __name__ == '__main__':
     #学号 | 密码
-    account = [
+    accounts = [
         ("1832331405", b"my password"),
         ("1832331431", b"your password"),
     ]
 
-    for username, password in account:
+    for username, password in accounts:
         getScores(username, password, f"{username}.csv")
