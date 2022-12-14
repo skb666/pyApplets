@@ -6,7 +6,6 @@ import openai
 
 def init_openai():
     # Set the GPT-3 API key
-    openai.organization = "org-GQB7Bz8SxOa1UMJmQlCNjONi"
     openai.api_key = os.getenv("OPENAI_API_KEY")
     # with open("openai_module.txt", 'w+') as f_obj:
     #     f_obj.write(str(openai.Model.list()))
